@@ -1,0 +1,30 @@
+# Environment variables & secrets
+.env
+.env.local
+
+# Python environment & cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Node modules & production builds
+node_modules/
+dist/
+.eslintcache
+
+# Local user uploaded raw/processed data
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# OS / IDE configurations
+.vscode/
+.idea/
+.gemini/
+.DS_Store
+Thumbs.db
