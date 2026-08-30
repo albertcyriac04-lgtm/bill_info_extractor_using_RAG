@@ -239,33 +239,141 @@ function App() {
   const formatMarkdown = (text) => {
     if (!text) return '';
     
-    // Simple HTML escaping
+    // 1. HTML Escaping for security
     let html = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Headings
+    // Helper: Clean math equations
+    const cleanMath = (mathText) => {
+      return mathText
+        .replace(/\\text\s*{(.*?)}/g, '$1')
+        .replace(/\\mathbf\s*{(.*?)}/g, '<strong>$1</strong>')
+        .replace(/\\mathrm\s*{(.*?)}/g, '$1')
+        .replace(/\\begin\s*{aligned}/g, '')
+        .replace(/\\end\s*{aligned}/g, '')
+        .replace(/\\begin\s*{array}/g, '')
+        .replace(/\\end\s*{array}/g, '')
+        .replace(/{,}/g, ',')      // e.g., 1{,}023 -> 1,023
+        .replace(/\\times/g, '×')
+        .replace(/\\div/g, '÷')
+        .replace(/\\pm/g, '±')
+        .replace(/&amp;/g, '')      // replaces escaped alignment operator
+        .replace(/\\\\/g, '\n');
+    };
+
+    // Helper: Parse block and inline LaTeX math
+    const formatMathBlocks = (txt) => {
+      let formatted = txt;
+      
+      // Block equations \[ ... \]
+      formatted = formatted.replace(/\\\[(.*?)\\\]/gs, (match, mathContent) => {
+        const cleaned = cleanMath(mathContent).trim();
+        const lines = cleaned.split('\n').map(line => `<div class="math-line">${line.trim()}</div>`).join('');
+        return `<div class="math-block">${lines}</div>`;
+      });
+      
+      // Block equations $$ ... $$
+      formatted = formatted.replace(/\$\$(.*?)\$\$/gs, (match, mathContent) => {
+        const cleaned = cleanMath(mathContent).trim();
+        const lines = cleaned.split('\n').map(line => `<div class="math-line">${line.trim()}</div>`).join('');
+        return `<div class="math-block">${lines}</div>`;
+      });
+
+      // Inline equations \( ... \)
+      formatted = formatted.replace(/\\\((.*?)\\\)/g, (match, mathContent) => {
+        return `<code class="math-inline">${cleanMath(mathContent)}</code>`;
+      });
+
+      return formatted;
+    };
+
+    // Helper: Parse markdown tables
+    const parseTables = (txt) => {
+      const lines = txt.split('\n');
+      let inTable = false;
+      let hasHeader = false;
+      let tableHtml = '';
+      const resultLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        // A table line must start with | and end with |
+        if (line.startsWith('|') && line.endsWith('|')) {
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          const isSeparator = cells.every(c => c.match(/^:?-+:?$/));
+          
+          if (isSeparator) {
+            hasHeader = true;
+            continue;
+          }
+          
+          if (!inTable) {
+            inTable = true;
+            hasHeader = false;
+            tableHtml = '<div class="table-container"><table class="data-table">';
+          }
+          
+          if (!hasHeader) {
+            tableHtml += '<thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+            hasHeader = true;
+          } else {
+            if (!tableHtml.includes('<tbody>')) {
+              tableHtml += '<tbody>';
+            }
+            tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+          }
+        } else {
+          if (inTable) {
+            tableHtml += '</tbody></table></div>';
+            resultLines.push(tableHtml);
+            inTable = false;
+            tableHtml = '';
+          }
+          resultLines.push(lines[i]);
+        }
+      }
+      
+      if (inTable) {
+        tableHtml += '</tbody></table></div>';
+        resultLines.push(tableHtml);
+      }
+      
+      return resultLines.join('\n');
+    };
+
+    // 2. Parse Tables
+    html = parseTables(html);
+
+    // 3. Parse LaTeX Math Blocks
+    html = formatMathBlocks(html);
+
+    // 4. Headings
     html = html.replace(/^### (.*?)$/gm, '<h4 class="md-h3">$1</h4>');
     html = html.replace(/^## (.*?)$/gm, '<h3 class="md-h2">$1</h3>');
     html = html.replace(/^# (.*?)$/gm, '<h2 class="md-h1">$1</h2>');
 
-    // Bold
+    // 5. Bold
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    // Code blocks
+    // 6. Code blocks
     html = html.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
 
-    // Bullet Lists
+    // 7. Bullet Lists
     let inList = false;
     const lines = html.split('\n');
     const formattedLines = lines.map(line => {
       const trimmed = line.trim();
+      // Skip processing list markers inside table tags
+      if (line.includes('<table') || line.includes('<tr') || line.includes('<td') || line.includes('<th') || line.includes('</table') || line.includes('</tr') || line.includes('</td') || line.includes('</th')) {
+        return line;
+      }
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         const content = trimmed.substring(2);
         if (!inList) {
           inList = true;
-          return `<ul class="md-list"><li>${content}</li>`;
+          return `<ul class="md-list" style="margin-left: 1.25rem; margin-bottom: 0.75rem; list-style-type: disc;"><li>${content}</li>`;
         }
         return `<li>${content}</li>`;
       } else {
@@ -281,8 +389,10 @@ function App() {
     }
     html = formattedLines.join('\n');
 
-    // Line breaks
+    // 8. Line breaks (except inside table and list tags)
     html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<(table|thead|tbody|tr|th|td|div|ul|li)(.*?)><br>/g, '<$1$2>');
+    html = html.replace(/<\/(table|thead|tbody|tr|th|td|div|ul|li)><br>/g, '</$1>');
     
     return html;
   };
