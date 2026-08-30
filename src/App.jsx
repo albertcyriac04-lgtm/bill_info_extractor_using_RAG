@@ -292,7 +292,7 @@ function App() {
     if (bills.length === 0) return { total: 0, count: 0, avg: 0, vendors: 0, currency: 'USD' };
     
     const uniqueVendors = new Set();
-    const currencyTotals = {};
+    const currency_totals = {};
     
     bills.forEach(bill => {
       const v = bill.vendor_name || 'Unknown';
