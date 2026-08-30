@@ -28,3 +28,5 @@ data/processed/*
 .gemini/
 .DS_Store
 Thumbs.db
+
+.vercel

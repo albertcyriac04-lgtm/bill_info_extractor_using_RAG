@@ -9,8 +9,17 @@ function App() {
   const [apiKey, setApiKey] = useState(() => {
     return localStorage.getItem('groq_api_key') || '';
   });
+  const [apiBaseUrl, setApiBaseUrl] = useState(() => {
+    return localStorage.getItem('api_base_url') || 'https://api.groq.com/openai/v1';
+  });
   const [textModel, setTextModel] = useState('llama-3.3-70b-versatile');
+  const [customTextModel, setCustomTextModel] = useState(() => {
+    return localStorage.getItem('custom_text_model') || '';
+  });
   const [visionModel, setVisionModel] = useState('llama-3.2-11b-vision-preview');
+  const [customVisionModel, setCustomVisionModel] = useState(() => {
+    return localStorage.getItem('custom_vision_model') || '';
+  });
   
   const [bills, setBills] = useState(() => {
     const saved = localStorage.getItem('processed_bills');
@@ -40,6 +49,18 @@ function App() {
   useEffect(() => {
     localStorage.setItem('groq_api_key', apiKey);
   }, [apiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('api_base_url', apiBaseUrl);
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('custom_text_model', customTextModel);
+  }, [customTextModel]);
+
+  useEffect(() => {
+    localStorage.setItem('custom_vision_model', customVisionModel);
+  }, [customVisionModel]);
 
   useEffect(() => {
     localStorage.setItem('processed_bills', JSON.stringify(bills));
@@ -84,8 +105,9 @@ function App() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('apiKey', apiKey);
-      formData.append('textModel', textModel);
-      formData.append('visionModel', visionModel);
+      formData.append('textModel', textModel === 'custom' ? customTextModel : textModel);
+      formData.append('visionModel', visionModel === 'custom' ? customVisionModel : visionModel);
+      formData.append('apiBase', apiBaseUrl);
 
       try {
         const response = await fetch('/api/upload', {
@@ -175,7 +197,8 @@ function App() {
           history: [...chatHistory, userMessage],
           bills: bills,
           apiKey: apiKey,
-          model: textModel
+          model: textModel === 'custom' ? customTextModel : textModel,
+          apiBase: apiBaseUrl
         }),
       });
 
@@ -322,11 +345,22 @@ function App() {
           </div>
           
           <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-            <label className="form-label">Groq API Key</label>
+            <label className="form-label">API Base URL</label>
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="https://api.groq.com/openai/v1"
+              value={apiBaseUrl}
+              onChange={(e) => setApiBaseUrl(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+            <label className="form-label">API Key</label>
             <input 
               type="password" 
               className="form-control" 
-              placeholder="Paste gsk_... key"
+              placeholder="Paste your API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
@@ -342,7 +376,19 @@ function App() {
               <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
               <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
               <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+              <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+              <option value="custom">Custom Model...</option>
             </select>
+            {textModel === 'custom' && (
+              <input 
+                type="text" 
+                className="form-control" 
+                style={{ marginTop: '0.5rem' }}
+                placeholder="Enter custom model name (e.g. gpt-4o)"
+                value={customTextModel}
+                onChange={(e) => setCustomTextModel(e.target.value)}
+              />
+            )}
           </div>
 
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
@@ -354,7 +400,18 @@ function App() {
             >
               <option value="llama-3.2-11b-vision-preview">llama-3.2-11b-vision-preview</option>
               <option value="llama-3.2-90b-vision-preview">llama-3.2-90b-vision-preview</option>
+              <option value="custom">Custom Vision Model...</option>
             </select>
+            {visionModel === 'custom' && (
+              <input 
+                type="text" 
+                className="form-control" 
+                style={{ marginTop: '0.5rem' }}
+                placeholder="Enter custom vision model name"
+                value={customVisionModel}
+                onChange={(e) => setCustomVisionModel(e.target.value)}
+              />
+            )}
           </div>
 
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>

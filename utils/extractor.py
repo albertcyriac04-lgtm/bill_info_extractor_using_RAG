@@ -19,15 +19,15 @@ def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
 
-def extract_structured_bill_data(file_path: str, api_key: str, model_text: str = "llama-3.3-70b-versatile", model_vision: str = "llama-3.2-11b-vision-preview") -> dict:
+def extract_structured_bill_data(file_path: str, api_key: str, model_text: str = "llama-3.3-70b-versatile", model_vision: str = "llama-3.2-11b-vision-preview", api_base: str = "https://api.groq.com/openai/v1") -> dict:
     """
-    Extract key invoice details using Groq API.
+    Extract key invoice details using Groq or any OpenAI-compatible API.
     If PDF: extract text locally first and use text model.
     If Image: encode to base64 and use vision model.
     """
     client = OpenAI(
         api_key=api_key,
-        base_url="https://api.groq.com/openai/v1"
+        base_url=api_base
     )
 
     _, ext = os.path.splitext(file_path.lower())

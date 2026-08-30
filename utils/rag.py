@@ -64,14 +64,14 @@ def build_rag_context(bills: list) -> str:
             
     return "\n".join(context_lines)
 
-def query_rag_engine(query: str, history: list, bills: list, api_key: str, model: str = "llama-3.3-70b-versatile"):
+def query_rag_engine(query: str, history: list, bills: list, api_key: str, model: str = "llama-3.3-70b-versatile", api_base: str = "https://api.groq.com/openai/v1"):
     """
-    Query the Groq API using a RAG prompt with all bills loaded as context.
+    Query the OpenAI-compatible API using a RAG prompt with all bills loaded as context.
     Yields chunks for streaming.
     """
     client = OpenAI(
         api_key=api_key,
-        base_url="https://api.groq.com/openai/v1"
+        base_url=api_base
     )
     
     bills_context = build_rag_context(bills)

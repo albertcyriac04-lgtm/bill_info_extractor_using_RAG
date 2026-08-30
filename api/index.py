@@ -27,6 +27,7 @@ class ChatRequest(BaseModel):
     bills: List[Dict[str, Any]]
     apiKey: Optional[str] = None
     model: Optional[str] = "llama-3.3-70b-versatile"
+    apiBase: Optional[str] = "https://api.groq.com/openai/v1"
 
 @app.get("/api/health")
 def health_check():
@@ -37,7 +38,8 @@ async def upload_bill(
     file: UploadFile = File(...),
     apiKey: str = Form(...),
     textModel: str = Form("llama-3.3-70b-versatile"),
-    visionModel: str = Form("llama-3.2-11b-vision-preview")
+    visionModel: str = Form("llama-3.2-11b-vision-preview"),
+    apiBase: str = Form("https://api.groq.com/openai/v1")
 ):
     """
     Endpoint to upload a bill (PDF/Image) and extract its structured details.
@@ -62,7 +64,8 @@ async def upload_bill(
             temp_file_path,
             apiKey,
             model_text=textModel,
-            model_vision=visionModel
+            model_vision=visionModel,
+            api_base=apiBase
         )
         # Append original filename to the response data
         data["_filename"] = file.filename
@@ -95,7 +98,8 @@ async def chat_rag(request: ChatRequest):
                 request.history,
                 request.bills,
                 api_key,
-                model=request.model
+                model=request.model,
+                api_base=request.apiBase
             ):
                 yield chunk
         except Exception as e:
