@@ -121,12 +121,8 @@ function App() {
         }
 
         const data = await response.json();
-        setBills(prev => {
-          const updated = [...prev, data];
-          // Auto select the newly uploaded bill
-          setSelectedBillIndex(updated.length - 1);
-          return updated;
-        });
+        setBills(prev => [...prev, data]);
+        setSelectedBillIndex(bills.length);
         setUploadSuccess(`Successfully processed ${file.name}`);
       } catch (err) {
         console.error(err);
@@ -141,13 +137,11 @@ function App() {
 
   // --- Remove Bill ---
   const removeBill = (indexToRemove) => {
-    setBills(prev => {
-      const updated = prev.filter((_, idx) => idx !== indexToRemove);
-      if (selectedBillIndex >= updated.length) {
-        setSelectedBillIndex(Math.max(0, updated.length - 1));
-      }
-      return updated;
-    });
+    const updated = bills.filter((_, idx) => idx !== indexToRemove);
+    setBills(updated);
+    if (selectedBillIndex >= updated.length) {
+      setSelectedBillIndex(Math.max(0, updated.length - 1));
+    }
   };
 
   // --- Reset Application State ---
@@ -648,7 +642,7 @@ function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedBill.line_items && selectedBill.line_items.length > 0 ? (
+                              {Array.isArray(selectedBill.line_items) && selectedBill.line_items.length > 0 ? (
                                 selectedBill.line_items.map((item, idx) => {
                                   const uPrice = parseFloat(item.unit_price);
                                   const tPrice = parseFloat(item.total_price);
